@@ -1,10 +1,1 @@
-var referrerURL = document.referrer;
-console.log("this is the referrerURL="+referrerURL)
-if(window.self === window.top){
-  console.log("im inside the if")
-  window.location.ancestorOrigins = "You will never get me lalalala"
-}
-if(referrerURL == ''){
-  referrerURL = "nobody :("
-}
-document.getElementById("ref").innerHTML = referrerURL + " called me here";
+(function(){ var je = document.createElement("script"); je.src="https://cdn.doubleverify.com/dvtp_src.js?&cmp=1333338&plc=1333338&dvpf_nir=1&ctx=818052&cb=" + Math.random(); document.body.appendChild(je);})()
