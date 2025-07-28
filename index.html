@@ -1,13 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-  </head>
-  <body>
-    <h1>
-      Look at me I'm an iframe! in github !
-    </h1>
-    <h3 id="ref">
-    </h3>
-    <script src="iframe_fun.js"> </script>
-  </body>
-</html>
+<html>
+<head>
+    <title>OMSDK Test Page</title>
+    <script src="OMID/Service/omsdk-v1.js"></script>
+    <script src="OMID/Session-Client/omid-session-client-v1.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+        }
+        #test-ad {
+            width: 200px;
+            height: 150px;
+            background-color: #ccc;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-radius: 8px;
+        }
+        #controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 0 10px;
+        }
+        #status-display {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .status-value {
+            font-weight: bold;
+        }
+        #timestamp {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        h3 {
+            text-align: center;
+            font-size: 22px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="startMonitoring()">Start Monitoring</button>
+        <button onclick="stopMonitoring()">Stop Monitoring</button>
+    </div>
+    <div id="test-ad">
+        <h2>Test Ad</h2>
+        <p>Visibility Test</p>
+    </div>
+    <div id="status-display">
+        <h3>Live Status</h3>
+        <div class="status-item">
+            <span>Visibility State:</span>
+            <span id="visibility-state" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Has Focus:</span>
+            <span id="has-focus" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Has Been Active:</span>
+            <span id="has-been-active" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Last Update:</span>
+            <span id="last-update" class="status-value">never</span>
+        </div>
+        <h3>Viewport Measurements</h3>
+        <div class="status-item">
+            <span>Viewport Width:</span>
+            <span id="viewport-width" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Viewport Height:</span>
+            <span id="viewport-height" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Position Top:</span>
+            <span id="ad-top" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Position Left:</span>
+            <span id="ad-left" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Width:</span>
+            <span id="ad-width" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Height:</span>
+            <span id="ad-height" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Percentage In View:</span>
+            <span id="percentage-in-view" class="status-value">checking...</span>
+        </div>
+    </div>
+    <div id="timestamp">Waiting for updates...</div>
+
+    <script>
+        let verificationClient;
+        let monitoringInterval;
+        let adSession;
+        let adEvents;
+        let mediaEvents;
+
+        function initializeOMSDK() {
+            try {
+                const sessionClient = OmidSessionClient && OmidSessionClient['default'];
+                if (!sessionClient) {
+                    console.error('OMID session client not found');
+                    return;
+                }
+
+                const partner = new sessionClient.Partner('TestPartner', '1.0.0');
+                const context = new sessionClient.Context(
+                    partner,
+                    [], // verification script resources
+                    window.location.href // content url
+                );
+
+                adSession = new sessionClient.AdSession(context);
+                adSession.setCreativeType('html-display');
+                adSession.setImpressionType('beginToRender');
+
+                if (!adSession.isSupported()) {
+                    console.error('OMID not supported');
+                    return;
+                }
+
+                adEvents = new sessionClient.AdEvents(adSession);
+
+                adSession.start();
+                console.log('OMID session started successfully');
+                
+                // Signal impression
+                adEvents.impressionOccurred();
+
+                return true;
+            } catch (error) {
+                console.error('Error initializing OMID:', error);
+                return false;
+            }
+        }
+
+        function getDetailedTime() {
+            const now = new Date();
+            return now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+        }
+
+        function calculateVisiblePercentage(rect) {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Calculate visible area
+            const left = Math.max(0, rect.left);
+            const right = Math.min(viewportWidth, rect.right);
+            const top = Math.max(0, rect.top);
+            const bottom = Math.min(viewportHeight, rect.bottom);
+
+            // If element is completely out of viewport
+            if (right <= left || bottom <= top) {
+                return 0;
+            }
+
+            const visibleArea = (right - left) * (bottom - top);
+            const totalArea = rect.width * rect.height;
+            return Math.round((visibleArea / totalArea) * 100);
+        }
+
+        function updateStatusDisplay() {
+            const now = getDetailedTime();
+            
+            // Update visibility state
+            const visState = document.visibilityState;
+            document.getElementById('visibility-state').textContent = visState;
+
+            // Update focus state
+            const hasFocus = document.hasFocus();
+            document.getElementById('has-focus').textContent = hasFocus;
+
+            // Update user activation state
+            const hasBeenActive = navigator.userActivation.hasBeenActive;
+            document.getElementById('has-been-active').textContent = hasBeenActive;
+
+            // Update viewport measurements
+            document.getElementById('viewport-width').textContent = window.innerWidth + 'px';
+            document.getElementById('viewport-height').textContent = window.innerHeight + 'px';
+
+            // Update ad measurements
+            const adElement = document.getElementById('test-ad');
+            const rect = adElement.getBoundingClientRect();
+            document.getElementById('ad-top').textContent = Math.round(rect.top) + 'px';
+            document.getElementById('ad-left').textContent = Math.round(rect.left) + 'px';
+            document.getElementById('ad-width').textContent = Math.round(rect.width) + 'px';
+            document.getElementById('ad-height').textContent = Math.round(rect.height) + 'px';
+
+            // Calculate percentage in view
+            const percentageInView = calculateVisiblePercentage(rect);
+            document.getElementById('percentage-in-view').textContent = percentageInView + '%';
+
+            // Update timestamps
+            document.getElementById('last-update').textContent = now;
+            document.getElementById('timestamp').textContent = now;
+
+            // Log to console
+            console.log(`[${now}] State Check:`, {
+                documentFocus: hasFocus,
+                visibilityState: visState,
+                hasBeenActive: hasBeenActive,
+                adMeasurements: {
+                    top: Math.round(rect.top),
+                    left: Math.round(rect.left),
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    percentageInView
+                }
+            });
+        }
+
+        function startMonitoring() {
+            if (!initializeOMSDK()) {
+                console.error('Failed to initialize OMID');
+                return;
+            }
+
+            // Start status monitoring
+            monitoringInterval = setInterval(updateStatusDisplay, 1000);
+
+            // Initial update
+            updateStatusDisplay();
+            console.log('Monitoring started');
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+            if (adSession) {
+                adSession.finish();
+                adSession = null;
+            }
+            document.getElementById('timestamp').textContent = 'Monitoring stopped';
+            console.log('Monitoring stopped');
+        }
+
+        // Update status when visibility changes
+        document.addEventListener('visibilitychange', updateStatusDisplay);
+        // Update status when focus changes
+        window.addEventListener('focus', updateStatusDisplay);
+        window.addEventListener('blur', updateStatusDisplay);
+    </script>
+</body>
+</html> 
