@@ -311,26 +311,7 @@
                     document.getElementById('percentage-in-view').textContent = percentageInView + '%';
 
                     // Log visibility data to console
-                    console.log(`[${now}] VISIBILITY DATA:`, {
-                        visibilityState: visState,
-                        hasFocus: hasFocus,
-                        hasBeenActive: hasBeenActive,
-                        viewport: {
-                            width: window.innerWidth,
-                            height: window.innerHeight
-                        },
-                        adPosition: {
-                            top: Math.round(rect.top),
-                            left: Math.round(rect.left),
-                            width: Math.round(rect.width),
-                            height: Math.round(rect.height)
-                        },
-                        visibility: {
-                            percentageInView: percentageInView,
-                            isVisible: percentageInView > 0,
-                            isFullyVisible: percentageInView === 100
-                        }
-                    });
+                    console.log(`[${now}] VISIBILITY DATA: State=${visState}, Focus=${hasFocus}, Active=${hasBeenActive}, Viewport=${window.innerWidth}x${window.innerHeight}, Ad=${Math.round(rect.top)}/${Math.round(rect.left)}/${Math.round(rect.width)}/${Math.round(rect.height)}, Visible=${percentageInView}%`);
                 } else {
                     document.getElementById('ad-top').textContent = 'Element not found';
                     document.getElementById('ad-left').textContent = 'Element not found';
@@ -366,7 +347,7 @@
             }
 
             // Start status monitoring
-            monitoringInterval = setInterval(updateStatusDisplay, 1000);
+            monitoringInterval = setInterval(updateStatusDisplay, 2000);
 
             // Initial update
             updateStatusDisplay();
