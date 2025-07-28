@@ -4,65 +4,65 @@
     <title>OMSDK Test Page</title>
     <script src="https://cdn.jsdelivr.net/npm/@iabtechlab/omid@1.4.8/dist/omid.js"></script>
     <style>
-        #test-ad {
-            width: 300px;
-            height: 250px;
-            background-color: red;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            text-align: center;
+        body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+        }
+        #test-ad {
+            width: 200px;
+            height: 150px;
+            background-color: #ccc;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-radius: 8px;
         }
         #controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 0 10px;
         }
         #status-display {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff00;
-            font-family: monospace;
-            padding: 15px;
-            border-radius: 5px;
-            min-width: 300px;
-            font-size: 14px;
-            line-height: 1.5;
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 18px;
         }
         .status-item {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
+            margin: 15px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
         }
         .status-value {
             font-weight: bold;
         }
-        .status-value.true {
-            color: #00ff00;
-        }
-        .status-value.false {
-            color: #ff4444;
-        }
         #timestamp {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff00;
-            font-family: monospace;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 16px;
+            font-size: 24px;
             font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        h3 {
+            text-align: center;
+            font-size: 22px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -73,10 +73,10 @@
     </div>
     <div id="test-ad">
         <h2>Test Ad</h2>
-        <p>OMSDK Visibility Test</p>
+        <p>Visibility Test</p>
     </div>
     <div id="status-display">
-        <h3 style="margin-top: 0;">Live Status</h3>
+        <h3>Live Status</h3>
         <div class="status-item">
             <span>Visibility State:</span>
             <span id="visibility-state" class="status-value">checking...</span>
@@ -92,6 +92,27 @@
         <div class="status-item">
             <span>Last Update:</span>
             <span id="last-update" class="status-value">never</span>
+        </div>
+        <h3>OMID Measurements</h3>
+        <div class="status-item">
+            <span>Percentage In View:</span>
+            <span id="percentage-in-view" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Viewport Width:</span>
+            <span id="viewport-width" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Viewport Height:</span>
+            <span id="viewport-height" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Width:</span>
+            <span id="ad-width" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Ad Height:</span>
+            <span id="ad-height" class="status-value">checking...</span>
         </div>
     </div>
     <div id="timestamp">Waiting for updates...</div>
@@ -111,24 +132,37 @@
             // Update visibility state
             const visState = document.visibilityState;
             document.getElementById('visibility-state').textContent = visState;
-            document.getElementById('visibility-state').className = 
-                'status-value ' + (visState === 'visible' ? 'true' : 'false');
 
             // Update focus state
             const hasFocus = document.hasFocus();
             document.getElementById('has-focus').textContent = hasFocus;
-            document.getElementById('has-focus').className = 
-                'status-value ' + (hasFocus ? 'true' : 'false');
 
             // Update user activation state
             const hasBeenActive = navigator.userActivation.hasBeenActive;
             document.getElementById('has-been-active').textContent = hasBeenActive;
-            document.getElementById('has-been-active').className = 
-                'status-value ' + (hasBeenActive ? 'true' : 'false');
 
             // Update timestamps
             document.getElementById('last-update').textContent = now;
             document.getElementById('timestamp').textContent = now;
+        }
+
+        function updateOMIDMeasurements(data) {
+            document.getElementById('percentage-in-view').textContent = 
+                Math.round(data.percentageInView) + '%';
+            
+            if (data.clientGeometry) {
+                document.getElementById('viewport-width').textContent = 
+                    Math.round(data.clientGeometry.width) + 'px';
+                document.getElementById('viewport-height').textContent = 
+                    Math.round(data.clientGeometry.height) + 'px';
+            }
+            
+            if (data.onScreenGeometry) {
+                document.getElementById('ad-width').textContent = 
+                    Math.round(data.onScreenGeometry.width) + 'px';
+                document.getElementById('ad-height').textContent = 
+                    Math.round(data.onScreenGeometry.height) + 'px';
+            }
         }
 
         function startMonitoring() {
@@ -151,11 +185,8 @@
             // Listen for geometry changes
             verificationClient.addEventListener('geometryChange', (event) => {
                 const now = getDetailedTime();
-                console.log(`[${now}] OMID Geometry Update:`, {
-                    percentageInView: event.data.percentageInView,
-                    onScreen: event.data.onScreenGeometry,
-                    viewport: event.data.clientGeometry
-                });
+                console.log(`[${now}] OMID Geometry Update:`, event.data);
+                updateOMIDMeasurements(event.data);
             });
 
             // Start status monitoring
