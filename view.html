@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OMSDK Test Page</title>
+    <script src="https://cdn.jsdelivr.net/npm/@iabtechlab/omid@1.4.8/dist/omid.js"></script>
+    <style>
+        #test-ad {
+            width: 300px;
+            height: 250px;
+            background-color: red;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #status-display {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            min-width: 300px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .status-value {
+            font-weight: bold;
+        }
+        .status-value.true {
+            color: #00ff00;
+        }
+        .status-value.false {
+            color: #ff4444;
+        }
+        #timestamp {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="startMonitoring()">Start Monitoring</button>
+        <button onclick="stopMonitoring()">Stop Monitoring</button>
+    </div>
+    <div id="test-ad">
+        <h2>Test Ad</h2>
+        <p>OMSDK Visibility Test</p>
+    </div>
+    <div id="status-display">
+        <h3 style="margin-top: 0;">Live Status</h3>
+        <div class="status-item">
+            <span>Visibility State:</span>
+            <span id="visibility-state" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Has Focus:</span>
+            <span id="has-focus" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Has Been Active:</span>
+            <span id="has-been-active" class="status-value">checking...</span>
+        </div>
+        <div class="status-item">
+            <span>Last Update:</span>
+            <span id="last-update" class="status-value">never</span>
+        </div>
+    </div>
+    <div id="timestamp">Waiting for updates...</div>
+
+    <script>
+        let verificationClient;
+        let monitoringInterval;
+
+        function getDetailedTime() {
+            const now = new Date();
+            return now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+        }
+
+        function updateStatusDisplay() {
+            const now = getDetailedTime();
+            
+            // Update visibility state
+            const visState = document.visibilityState;
+            document.getElementById('visibility-state').textContent = visState;
+            document.getElementById('visibility-state').className = 
+                'status-value ' + (visState === 'visible' ? 'true' : 'false');
+
+            // Update focus state
+            const hasFocus = document.hasFocus();
+            document.getElementById('has-focus').textContent = hasFocus;
+            document.getElementById('has-focus').className = 
+                'status-value ' + (hasFocus ? 'true' : 'false');
+
+            // Update user activation state
+            const hasBeenActive = navigator.userActivation.hasBeenActive;
+            document.getElementById('has-been-active').textContent = hasBeenActive;
+            document.getElementById('has-been-active').className = 
+                'status-value ' + (hasBeenActive ? 'true' : 'false');
+
+            // Update timestamps
+            document.getElementById('last-update').textContent = now;
+            document.getElementById('timestamp').textContent = now;
+        }
+
+        function startMonitoring() {
+            if (typeof omid === 'undefined') {
+                console.error('OMID not loaded');
+                return;
+            }
+
+            // Initialize OMID
+            const context = {
+                partner: 'TestPartner',
+                campaign: 'TestCampaign',
+                adType: 'display',
+                adUnit: 'banner'
+            };
+
+            // Create verification client
+            verificationClient = new omid.verificationClient.VerificationClient();
+
+            // Listen for geometry changes
+            verificationClient.addEventListener('geometryChange', (event) => {
+                const now = getDetailedTime();
+                console.log(`[${now}] OMID Geometry Update:`, {
+                    percentageInView: event.data.percentageInView,
+                    onScreen: event.data.onScreenGeometry,
+                    viewport: event.data.clientGeometry
+                });
+            });
+
+            // Start status monitoring
+            monitoringInterval = setInterval(() => {
+                updateStatusDisplay();
+                
+                // Log to console as well
+                const now = getDetailedTime();
+                console.log(`[${now}] State Check:`, {
+                    documentFocus: document.hasFocus(),
+                    visibilityState: document.visibilityState,
+                    hasBeenActive: navigator.userActivation.hasBeenActive
+                });
+            }, 1000);
+
+            // Initial update
+            updateStatusDisplay();
+            console.log('Monitoring started');
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+            if (verificationClient) {
+                verificationClient = null;
+            }
+            document.getElementById('timestamp').textContent = 'Monitoring stopped';
+            console.log('Monitoring stopped');
+        }
+
+        // Update status when visibility changes
+        document.addEventListener('visibilitychange', updateStatusDisplay);
+        // Update status when focus changes
+        window.addEventListener('focus', updateStatusDisplay);
+        window.addEventListener('blur', updateStatusDisplay);
+    </script>
+</body>
+</html> 
