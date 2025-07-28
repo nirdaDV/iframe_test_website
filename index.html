@@ -126,6 +126,11 @@
     </div>
     <div id="timestamp">Waiting for updates...</div>
 
+    <div id="debug-section" style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 8px; font-family: monospace; font-size: 14px;">
+        <h3>Debug Information</h3>
+        <div id="debug-output"></div>
+    </div>
+
     <script>
         let verificationClient;
         let monitoringInterval;
@@ -133,41 +138,116 @@
         let adEvents;
         let mediaEvents;
 
+        // Debug output function
+        function debugLog(message) {
+            const debugOutput = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '5px';
+            logEntry.style.padding = '2px 0';
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+            debugOutput.appendChild(logEntry);
+            
+            // Keep only last 20 entries
+            while (debugOutput.children.length > 20) {
+                debugOutput.removeChild(debugOutput.firstChild);
+            }
+        }
+
+        // Debug script loading
+        function checkScriptLoading() {
+            debugLog('Checking script loading status...');
+            debugLog(`OmidSessionClient available: ${typeof OmidSessionClient !== 'undefined'}`);
+            debugLog(`OmidSessionClient default: ${OmidSessionClient && OmidSessionClient['default'] ? 'Yes' : 'No'}`);
+            
+            if (typeof OmidSessionClient !== 'undefined') {
+                debugLog('OMID Session Client loaded successfully');
+            } else {
+                debugLog('ERROR: OMID Session Client not loaded - check script paths');
+            }
+        }
+
+        // Test basic functionality
+        function testBasicFunctionality() {
+            debugLog('Testing basic functionality...');
+            
+            // Test DOM access
+            const testAd = document.getElementById('test-ad');
+            debugLog(`Test ad element found: ${!!testAd}`);
+            
+            // Test viewport access
+            debugLog(`Viewport width: ${window.innerWidth}px`);
+            debugLog(`Viewport height: ${window.innerHeight}px`);
+            
+            // Test visibility state
+            debugLog(`Document visibility state: ${document.visibilityState}`);
+            
+            // Test focus state
+            debugLog(`Document has focus: ${document.hasFocus()}`);
+            
+            // Test user activation
+            debugLog(`User activation available: ${!!navigator.userActivation}`);
+            if (navigator.userActivation) {
+                debugLog(`Has been active: ${navigator.userActivation.hasBeenActive}`);
+            }
+            
+            // Test getBoundingClientRect
+            if (testAd) {
+                const rect = testAd.getBoundingClientRect();
+                debugLog(`Ad element rect: top=${Math.round(rect.top)}, left=${Math.round(rect.left)}, width=${Math.round(rect.width)}, height=${Math.round(rect.height)}`);
+            }
+        }
+
         function initializeOMSDK() {
             try {
-                const sessionClient = OmidSessionClient && OmidSessionClient['default'];
-                if (!sessionClient) {
-                    console.error('OMID session client not found');
-                    return;
+                debugLog('Initializing OMID SDK...');
+                
+                // Check if OMID scripts are loaded
+                if (typeof OmidSessionClient === 'undefined') {
+                    debugLog('ERROR: OMID Session Client not loaded');
+                    return false;
                 }
 
+                const sessionClient = OmidSessionClient && OmidSessionClient['default'];
+                if (!sessionClient) {
+                    debugLog('ERROR: OMID session client not found');
+                    return false;
+                }
+
+                debugLog('Creating OMID partner...');
                 const partner = new sessionClient.Partner('TestPartner', '1.0.0');
+                
+                debugLog('Creating OMID context...');
                 const context = new sessionClient.Context(
                     partner,
                     [], // verification script resources
                     window.location.href // content url
                 );
 
+                debugLog('Creating OMID ad session...');
                 adSession = new sessionClient.AdSession(context);
                 adSession.setCreativeType('html-display');
                 adSession.setImpressionType('beginToRender');
 
                 if (!adSession.isSupported()) {
-                    console.error('OMID not supported');
-                    return;
+                    debugLog('ERROR: OMID not supported');
+                    return false;
                 }
 
+                debugLog('Creating OMID ad events...');
                 adEvents = new sessionClient.AdEvents(adSession);
 
+                debugLog('Starting OMID session...');
                 adSession.start();
-                console.log('OMID session started successfully');
+                debugLog('SUCCESS: OMID session started successfully');
                 
                 // Signal impression
                 adEvents.impressionOccurred();
+                debugLog('SUCCESS: Impression signaled');
 
                 return true;
             } catch (error) {
-                console.error('Error initializing OMID:', error);
+                debugLog(`ERROR: Error initializing OMID: ${error.message}`);
                 return false;
             }
         }
@@ -200,57 +280,63 @@
         function updateStatusDisplay() {
             const now = getDetailedTime();
             
-            // Update visibility state
-            const visState = document.visibilityState;
-            document.getElementById('visibility-state').textContent = visState;
+            try {
+                // Update visibility state
+                const visState = document.visibilityState;
+                document.getElementById('visibility-state').textContent = visState;
 
-            // Update focus state
-            const hasFocus = document.hasFocus();
-            document.getElementById('has-focus').textContent = hasFocus;
+                // Update focus state
+                const hasFocus = document.hasFocus();
+                document.getElementById('has-focus').textContent = hasFocus;
 
-            // Update user activation state
-            const hasBeenActive = navigator.userActivation.hasBeenActive;
-            document.getElementById('has-been-active').textContent = hasBeenActive;
+                // Update user activation state
+                const hasBeenActive = navigator.userActivation ? navigator.userActivation.hasBeenActive : 'Not supported';
+                document.getElementById('has-been-active').textContent = hasBeenActive;
 
-            // Update viewport measurements
-            document.getElementById('viewport-width').textContent = window.innerWidth + 'px';
-            document.getElementById('viewport-height').textContent = window.innerHeight + 'px';
+                // Update viewport measurements
+                document.getElementById('viewport-width').textContent = window.innerWidth + 'px';
+                document.getElementById('viewport-height').textContent = window.innerHeight + 'px';
 
-            // Update ad measurements
-            const adElement = document.getElementById('test-ad');
-            const rect = adElement.getBoundingClientRect();
-            document.getElementById('ad-top').textContent = Math.round(rect.top) + 'px';
-            document.getElementById('ad-left').textContent = Math.round(rect.left) + 'px';
-            document.getElementById('ad-width').textContent = Math.round(rect.width) + 'px';
-            document.getElementById('ad-height').textContent = Math.round(rect.height) + 'px';
+                // Update ad measurements
+                const adElement = document.getElementById('test-ad');
+                if (adElement) {
+                    const rect = adElement.getBoundingClientRect();
+                    document.getElementById('ad-top').textContent = Math.round(rect.top) + 'px';
+                    document.getElementById('ad-left').textContent = Math.round(rect.left) + 'px';
+                    document.getElementById('ad-width').textContent = Math.round(rect.width) + 'px';
+                    document.getElementById('ad-height').textContent = Math.round(rect.height) + 'px';
 
-            // Calculate percentage in view
-            const percentageInView = calculateVisiblePercentage(rect);
-            document.getElementById('percentage-in-view').textContent = percentageInView + '%';
-
-            // Update timestamps
-            document.getElementById('last-update').textContent = now;
-            document.getElementById('timestamp').textContent = now;
-
-            // Log to console
-            console.log(`[${now}] State Check:`, {
-                documentFocus: hasFocus,
-                visibilityState: visState,
-                hasBeenActive: hasBeenActive,
-                adMeasurements: {
-                    top: Math.round(rect.top),
-                    left: Math.round(rect.left),
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height),
-                    percentageInView
+                    // Calculate percentage in view
+                    const percentageInView = calculateVisiblePercentage(rect);
+                    document.getElementById('percentage-in-view').textContent = percentageInView + '%';
+                } else {
+                    document.getElementById('ad-top').textContent = 'Element not found';
+                    document.getElementById('ad-left').textContent = 'Element not found';
+                    document.getElementById('ad-width').textContent = 'Element not found';
+                    document.getElementById('ad-height').textContent = 'Element not found';
+                    document.getElementById('percentage-in-view').textContent = 'Element not found';
                 }
-            });
+
+                // Update timestamps
+                document.getElementById('last-update').textContent = now;
+                document.getElementById('timestamp').textContent = now;
+
+            } catch (error) {
+                debugLog(`ERROR: Error updating status display: ${error.message}`);
+                document.getElementById('timestamp').textContent = 'Error updating status';
+            }
         }
 
         function startMonitoring() {
-            if (!initializeOMSDK()) {
-                console.error('Failed to initialize OMID');
-                return;
+            debugLog('Starting monitoring...');
+            
+            // Check script loading first
+            checkScriptLoading();
+            
+            // Try to initialize OMID (but don't fail if it doesn't work)
+            const omidInitialized = initializeOMSDK();
+            if (!omidInitialized) {
+                debugLog('WARNING: OMID initialization failed, continuing with basic monitoring');
             }
 
             // Start status monitoring
@@ -258,7 +344,7 @@
 
             // Initial update
             updateStatusDisplay();
-            console.log('Monitoring started');
+            debugLog('SUCCESS: Monitoring started');
         }
 
         function stopMonitoring() {
@@ -271,7 +357,7 @@
                 adSession = null;
             }
             document.getElementById('timestamp').textContent = 'Monitoring stopped';
-            console.log('Monitoring stopped');
+            debugLog('Monitoring stopped');
         }
 
         // Update status when visibility changes
@@ -279,6 +365,28 @@
         // Update status when focus changes
         window.addEventListener('focus', updateStatusDisplay);
         window.addEventListener('blur', updateStatusDisplay);
+
+        // Initialize status display when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('Page loaded, initializing status display...');
+            
+            // Test basic functionality first
+            testBasicFunctionality();
+            
+            // Update status immediately
+            updateStatusDisplay();
+            
+            // Auto-start monitoring after a short delay
+            setTimeout(function() {
+                startMonitoring();
+            }, 500);
+        });
+
+        // Also update on window load to ensure everything is ready
+        window.addEventListener('load', function() {
+            debugLog('Window loaded, updating status...');
+            updateStatusDisplay();
+        });
     </script>
 </body>
 </html> 
