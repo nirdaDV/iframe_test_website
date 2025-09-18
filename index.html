@@ -293,6 +293,12 @@
                 const hasBeenActive = navigator.userActivation ? navigator.userActivation.hasBeenActive : 'Not supported';
                 document.getElementById('has-been-active').textContent = hasBeenActive;
 
+                // Send status message to Android via publishMessage
+                if (typeof Android !== 'undefined' && Android.publishMessage) {
+                    const statusMessage = `${now}: document.visibilityState = ${visState}, document.hasFocus = ${hasFocus}, navigator.userActivation.hasBeenActive = ${hasBeenActive}`;
+                    Android.publishMessage(statusMessage);
+                }
+                
                 // Update viewport measurements
                 document.getElementById('viewport-width').textContent = window.innerWidth + 'px';
                 document.getElementById('viewport-height').textContent = window.innerHeight + 'px';
