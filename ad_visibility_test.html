@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Visibility Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .content {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+        }
+        .ad-container {
+            width: 300px;
+            height: 250px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: 2px solid #333;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            position: relative;
+        }
+        .visibility-output {
+            background-color: #333;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .spacer {
+            height: 1000px;
+            background: linear-gradient(to bottom, #ffffff, #cccccc);
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="adElement" class="ad-container">
+        ADVERTISEMENT<br>
+        300x250 Banner
+    </div>
+
+    <div class="controls">
+        <button onclick="hideAd()">Hide Ad</button>
+        <button onclick="showAd()">Show Ad</button>
+        <button onclick="makeTransparent()">Make Transparent</button>
+        <button onclick="makeVisible()">Make Visible</button>
+    </div>
+
+    <div class="visibility-output" id="output"></div>
+
+    <div class="spacer">
+        <p>More content below the ad...</p>
+    </div>
+
+    <script>
+        const adElement = document.getElementById('adElement');
+        const output = document.getElementById('output');
+        let observer = null;
+        let isIntersecting = false;
+
+        // Initialize Intersection Observer
+        function initIntersectionObserver() {
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    isIntersecting = entry.isIntersecting;
+                });
+            }, { 
+                threshold: [0, 0.25, 0.5, 0.75, 1.0],
+                rootMargin: '0px'
+            });
+            observer.observe(adElement);
+        }
+
+        // Get all visibility metrics
+        function getVisibilityMetrics() {
+            const metrics = {};
+            
+            // 1. Intersection Observer
+            metrics.intersectionObserver = isIntersecting.toString();
+            
+            // 2. getBoundingClientRect
+            const rect = adElement.getBoundingClientRect();
+            const isInViewport = rect.top < window.innerHeight && 
+                               rect.bottom > 0 && 
+                               rect.left < window.innerWidth && 
+                               rect.right > 0;
+            metrics.boundingClientRect = {
+                isInViewport: isInViewport.toString(),
+                top: rect.top.toString(),
+                bottom: rect.bottom.toString(),
+                left: rect.left.toString(),
+                right: rect.right.toString(),
+                width: rect.width.toString(),
+                height: rect.height.toString()
+            };
+            
+            // 3. Document visibility
+            metrics.documentVisibility = {
+                hidden: document.hidden.toString(),
+                visibilityState: document.visibilityState
+            };
+            
+            // 4. Computed styles
+            const style = window.getComputedStyle(adElement);
+            metrics.computedStyle = {
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                zIndex: style.zIndex
+            };
+            
+            // 5. Offset properties
+            metrics.offsetProperties = {
+                offsetParentExists: (adElement.offsetParent !== null).toString(),
+                offsetWidth: adElement.offsetWidth.toString(),
+                offsetHeight: adElement.offsetHeight.toString(),
+                offsetTop: adElement.offsetTop.toString(),
+                offsetLeft: adElement.offsetLeft.toString()
+            };
+            
+            // 6. Viewport calculations
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const viewportHeight = window.innerHeight;
+            const elementTop = adElement.offsetTop;
+            const viewportVisible = elementTop < (scrollTop + viewportHeight) && 
+                                   (elementTop + adElement.offsetHeight) > scrollTop;
+            metrics.viewportCalculations = {
+                scrollTop: scrollTop.toString(),
+                viewportHeight: viewportHeight.toString(),
+                elementTop: elementTop.toString(),
+                isInViewport: viewportVisible.toString()
+            };
+            
+            // 7. Client dimensions
+            metrics.clientDimensions = {
+                clientHeight: adElement.clientHeight.toString(),
+                clientWidth: adElement.clientWidth.toString(),
+                hasClientDimensions: (adElement.clientHeight > 0 && adElement.clientWidth > 0).toString()
+            };
+            
+            return metrics;
+        }
+
+        // Format metrics as string for Android Bridge
+        function formatMetricsAsString(metrics) {
+            let result = "AD_VISIBILITY_METRICS:\n";
+            result += `timestamp:${Date.now()}\n`;
+            result += `intersectionObserver:${metrics.intersectionObserver}\n`;
+            result += `boundingRect_isInViewport:${metrics.boundingClientRect.isInViewport}\n`;
+            result += `document_hidden:${metrics.documentVisibility.hidden}\n`;
+            result += `document_visibilityState:${metrics.documentVisibility.visibilityState}\n`;
+            result += `style_visibility:${metrics.computedStyle.visibility}\n`;
+            result += `offset_parentExists:${metrics.offsetProperties.offsetParentExists}\n`;
+            result += `viewport_isInViewport:${metrics.viewportCalculations.isInViewport}\n`;
+            result += `client_hasClientDimensions:${metrics.clientDimensions.hasClientDimensions}\n`;
+            return result;
+        }
+
+        // Update display
+        function updateDisplay() {
+            const metrics = getVisibilityMetrics();
+            const formattedString = formatMetricsAsString(metrics);
+            output.textContent = formattedString;
+            
+            if (typeof Android !== 'undefined' && Android.publishMessage) {
+                const statusMessage = `${formattedString}`;
+                Android.publishMessage(statusMessage);
+            }
+        }
+
+        // Control functions
+        function hideAd() {
+            adElement.style.display = 'none';
+        }
+
+        function showAd() {
+            adElement.style.display = 'flex';
+        }
+
+        function makeTransparent() {
+            adElement.style.opacity = '0.1';
+        }
+
+        function makeVisible() {
+            adElement.style.opacity = '1';
+        }
+
+        // Event listeners
+        window.addEventListener('scroll', updateDisplay);
+        window.addEventListener('resize', updateDisplay);
+        document.addEventListener('visibilitychange', updateDisplay);
+
+        // Initialize
+        initIntersectionObserver();
+        updateDisplay();
+        
+        // Update every 500ms
+        setInterval(updateDisplay, 500);
+    </script>
+</body>
+</html>
