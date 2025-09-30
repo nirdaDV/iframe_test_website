@@ -188,6 +188,8 @@
             result += `document_hidden:${metrics.documentVisibility.hidden}\n`;
             result += `document_visibilityState:${metrics.documentVisibility.visibilityState}\n`;
             result += `style_visibility:${metrics.computedStyle.visibility}\n`;
+            result += `style_display:${metrics.computedStyle.display}\n`;
+            result += `style_opacity_visible:${(parseFloat(metrics.computedStyle.opacity) > 0).toString()}\n`;
             result += `offset_parentExists:${metrics.offsetProperties.offsetParentExists}\n`;
             result += `viewport_isInViewport:${metrics.viewportCalculations.isInViewport}\n`;
             result += `client_hasClientDimensions:${metrics.clientDimensions.hasClientDimensions}\n`;
