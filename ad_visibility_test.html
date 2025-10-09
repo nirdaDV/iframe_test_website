@@ -175,7 +175,8 @@
                 clientWidth: adElement.clientWidth.toString(),
                 hasClientDimensions: (adElement.clientHeight > 0 && adElement.clientWidth > 0).toString()
             };
-            
+
+            metrics.hasFocus = document.hasFocus();
             return metrics;
         }
 
@@ -193,6 +194,7 @@
             result += `offset_parentExists:${metrics.offsetProperties.offsetParentExists}\n`;
             result += `viewport_isInViewport:${metrics.viewportCalculations.isInViewport}\n`;
             result += `client_hasClientDimensions:${metrics.clientDimensions.hasClientDimensions}\n`;
+            result += `client_hasFocus:${metrics.hasFocus}\n`;
             return result;
         }
 
