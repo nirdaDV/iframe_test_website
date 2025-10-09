@@ -176,7 +176,7 @@
                 hasClientDimensions: (adElement.clientHeight > 0 && adElement.clientWidth > 0).toString()
             };
 
-            metrics.hasFocus = document.hasFocus();
+            metrics.hasFocus = document.hasFocus().toString();
             return metrics;
         }
 
