@@ -1,21 +1,21 @@
-<html>
-  <head>
-    <script>
-      navigator.serviceWorker.register('/iframe_test_website/sw.js')
-      .then(() => navigator.serviceWorker.ready)
-      .then((reg) => {
-        navigator.serviceWorker.onmessage = (e) => {
-          reg.unregister().then(() => {
-            window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
-          });
-        };
-        fetch('https://chatgpt.com/test', { mode: 'no-cors' });
-       });
-      
-    </script>
-  </head>
-  <body>
-    <h2>Im an Iframe</h2>
-  </body>
-</html>
-
+<script>
+navigator.serviceWorker.register('/iframe_test_website/sw.js')
+  .then(() => navigator.serviceWorker.ready)
+  .then((reg) => {
+    // Wait for SW to actually control the page
+    if (!navigator.serviceWorker.controller) {
+      return new Promise(resolve => {
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(reg));
+      });
+    }
+    return reg;
+  })
+  .then((reg) => {
+    navigator.serviceWorker.onmessage = (e) => {
+      reg.unregister().then(() => {
+        window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
+      });
+    };
+    fetch('https://chatgpt.com/test', { mode: 'no-cors' });
+  });
+</script>
