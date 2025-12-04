@@ -1,0 +1,12 @@
+<script>
+navigator.serviceWorker.register('/iframe_test_website/sw.js')
+  .then(() => navigator.serviceWorker.ready)
+  .then((reg) => {
+    navigator.serviceWorker.onmessage = (e) => {
+      reg.unregister().then(() => {
+        window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
+      });
+    };
+    fetch('https://chatgpt.com/test', { mode: 'no-cors' });
+  });
+</script>
