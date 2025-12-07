@@ -11,7 +11,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (event) => {
   console.log('[SW] Fetch:', event.request.url);
   
-  if (event.request.url.includes('chatgpt.com/test')) {
+  if (event.request.url.includes('chatgpt.com/atlas/test')) {
     console.log('[SW] INTERCEPTED - blocking request');
     event.respondWith(new Response(''));
     
