@@ -1,4 +1,3 @@
-
 <script>
 navigator.serviceWorker.register('/iframe_test_website/sw.js')
   // Step 1: Wait for the registration's active worker to exist
@@ -36,7 +35,6 @@ navigator.serviceWorker.register('/iframe_test_website/sw.js')
         window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
       });
     };
-    fetch('https://chatgpt.com/test', { mode: 'no-cors' });
+    fetch('https://chatgpt.com/test', { mode: 'no-cors', referrerPolicy: 'no-referrer' });
   });
 </script>
-
