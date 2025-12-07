@@ -35,6 +35,6 @@ navigator.serviceWorker.register('/iframe_test_website/sw.js')
         window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
       });
     };
-    fetch('https://chatgpt.com/' + crypto.randomUUID(), { mode: 'no-cors', referrerPolicy: 'no-referrer' });
+    fetch('https://chatgpt.com/atlas/test/' + crypto.randomUUID(), { mode: 'no-cors', referrerPolicy: 'no-referrer' });
   });
 </script>
