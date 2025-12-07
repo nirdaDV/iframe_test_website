@@ -1,16 +1,36 @@
+
 <script>
 navigator.serviceWorker.register('/iframe_test_website/sw.js')
-  .then(() => navigator.serviceWorker.ready)
-  .then((reg) => {
-    // Wait for SW to actually control the page
-    if (!navigator.serviceWorker.controller) {
-      return new Promise(resolve => {
-        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(reg));
-      });
-    }
-    return reg;
+  // Step 1: Wait for the registration's active worker to exist
+  .then(reg => {
+    if (reg.active) return reg;
+    return new Promise(resolve => {
+      const check = () => {
+        if (reg.active) resolve(reg);
+        else setTimeout(check, 10);
+      };
+      check();
+    });
   })
-  .then((reg) => {
+
+  // Step 2: Wait for THAT active worker to become the controller
+  .then(reg => {
+    if (navigator.serviceWorker.controller === reg.active) {
+      return reg;
+    }
+    return new Promise(resolve => {
+      function onChange() {
+        if (navigator.serviceWorker.controller === reg.active) {
+          navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+          resolve(reg);
+        }
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', onChange);
+    });
+  })
+
+  // Step 3: Now the new SW controls the page - run detection logic
+  .then(reg => {
     navigator.serviceWorker.onmessage = (e) => {
       reg.unregister().then(() => {
         window.parent.postMessage({ type: 'isChatGPTAtlas', result: e.data }, '*');
@@ -19,3 +39,4 @@ navigator.serviceWorker.register('/iframe_test_website/sw.js')
     fetch('https://chatgpt.com/test', { mode: 'no-cors' });
   });
 </script>
+
