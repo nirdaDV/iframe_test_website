@@ -1,15 +1,12 @@
 self.addEventListener('install', () => {
-  console.log('[SW] Installing');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
-  console.log('[SW] Activating');
   e.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-  console.log('[SW] Fetch:', event.request.url);
   
   if (event.request.url.includes('chatgpt.com/atlas/test')) {
     console.log('[SW] INTERCEPTED - blocking request');
